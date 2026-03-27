@@ -1,0 +1,10 @@
+python-telegram-bot==21.10
+--only-binary=:all:
+apscheduler==3.10.4
+beautifulsoup4==4.13.0
+lxml==5.3.1
+google-generativeai==0.8.3
+python-dotenv==1.0.1
+requests==2.32.3
+sqlcipher3-binary==3.46.1
+pycryptodome==3.20.0
