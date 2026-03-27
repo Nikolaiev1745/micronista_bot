@@ -1,6 +1,8 @@
 """
-scraper.py — Lectura de feeds RSS y extraccion del cuerpo de articulos.
-Usa el parser XML nativo de Python (sin dependencias externas).
+scraper.py — Lectura de feeds RSS y extracción del cuerpo de artículos.
+
+fetch_new_articles() guarda el contenido completo en la DB (cache global).
+El filtrado por keywords y fuentes se hace luego, por usuario, en bot.py.
 """
 
 import logging
@@ -9,7 +11,7 @@ import re
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 
-from config import RSS_SOURCES, KEYWORDS, MAX_ARTICLES_PER_RUN
+from config import RSS_SOURCES, MAX_ARTICLES_PER_RUN
 from database import Database
 
 logger = logging.getLogger(__name__)
@@ -23,6 +25,11 @@ class FeedScraper:
         self.db = db or Database()
 
     def fetch_new_articles(self) -> list[dict]:
+        """
+        Descarga todos los feeds globales, extrae el cuerpo de los artículos
+        nuevos (no en cache) y los guarda en seen_articles.
+        Retorna la lista de artículos recién procesados.
+        """
         candidates = []
         for source_name, feed_url in RSS_SOURCES.items():
             try:
@@ -33,18 +40,22 @@ class FeedScraper:
 
         new_articles = []
         for article in candidates:
-            if len(new_articles) >= MAX_ARTICLES_PER_RUN:
+            if len(new_articles) >= MAX_ARTICLES_PER_RUN * 3:  # límite de descarga por ciclo
                 break
             if self.db.is_seen(article["url"]):
                 continue
-            if not self._matches_keywords(article):
-                continue
             article["body"] = self._extract_body(article["url"])
-            self.db.mark_seen(article["url"], article["title"], article["source"])
+            self.db.mark_seen(article)
             new_articles.append(article)
 
-        logger.info("%d articulos nuevos relevantes encontrados.", len(new_articles))
+        logger.info("%d artículos nuevos descargados y cacheados.", len(new_articles))
         return new_articles
+
+    @staticmethod
+    def matches_keywords(article: dict, keywords: list[str]) -> bool:
+        """Filtra un artículo contra una lista de keywords (case-insensitive)."""
+        text = (article.get("title", "") + " " + article.get("description", "")).lower()
+        return any(kw.lower() in text for kw in keywords)
 
     def _parse_feed(self, feed_url: str, source_name: str) -> list[dict]:
         response = requests.get(feed_url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
@@ -77,7 +88,7 @@ class FeedScraper:
             articles.append({
                 "source":      source_name,
                 "url":         url,
-                "title":       get("title", "atom:title") or "Sin titulo",
+                "title":       get("title", "atom:title") or "Sin título",
                 "author":      get("author") or get("dc:creator") or "",
                 "published":   get("pubDate") or get("published", "atom:published") or "",
                 "description": description[:500],
@@ -85,10 +96,6 @@ class FeedScraper:
             })
 
         return articles
-
-    def _matches_keywords(self, article: dict) -> bool:
-        text = (article["title"] + " " + article["description"]).lower()
-        return any(kw.lower() in text for kw in KEYWORDS)
 
     def _extract_body(self, url: str) -> str:
         try:
