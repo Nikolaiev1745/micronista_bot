@@ -80,9 +80,17 @@ class Database:
                 CREATE TABLE IF NOT EXISTS user_settings (
                     chat_id                INTEGER PRIMARY KEY,
                     check_interval_minutes INTEGER,
-                    last_checked           TEXT
+                    last_checked           TEXT,
+                    keywords_filter_off    INTEGER NOT NULL DEFAULT 0
                 );
             """)
+            # Migración: agrega la columna si la DB ya existía antes de este cambio.
+            try:
+                conn.execute(
+                    "ALTER TABLE user_settings ADD COLUMN keywords_filter_off INTEGER NOT NULL DEFAULT 0"
+                )
+            except Exception:
+                pass  # La columna ya existe — no hace nada.
         logger.info("Base de datos inicializada en %s", self.path)
 
     # ── Suscriptores ──────────────────────────────────────────────────────────
@@ -252,6 +260,28 @@ class Database:
         """Borra config de fuentes del usuario (vuelve a usar todas las globales)."""
         with self._get_conn() as conn:
             conn.execute("DELETE FROM user_sources WHERE chat_id = ?", (chat_id,))
+
+    # ── Configuración del usuario ─────────────────────────────────────────────
+
+    # ── Modo "sin filtro de keywords" ────────────────────────────────────────
+
+    def get_keywords_filter_off(self, chat_id: int) -> bool:
+        """Retorna True si el usuario eligió recibir TODO sin filtrar por keywords."""
+        with self._get_conn() as conn:
+            row = conn.execute(
+                "SELECT keywords_filter_off FROM user_settings WHERE chat_id = ?",
+                (chat_id,)
+            ).fetchone()
+            return bool(row["keywords_filter_off"]) if row else False
+
+    def set_keywords_filter_off(self, chat_id: int, off: bool):
+        with self._get_conn() as conn:
+            conn.execute(
+                """INSERT INTO user_settings (chat_id, keywords_filter_off)
+                   VALUES (?, ?)
+                   ON CONFLICT(chat_id) DO UPDATE SET keywords_filter_off = excluded.keywords_filter_off""",
+                (chat_id, 1 if off else 0)
+            )
 
     # ── Configuración del usuario ─────────────────────────────────────────────
 
