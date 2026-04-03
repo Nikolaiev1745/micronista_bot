@@ -22,12 +22,11 @@ MAX_ARTICLES_PER_RUN   = 10   # límite de artículos enviados por ciclo (evita 
 # es seleccionado para resumir y enviar.
 KEYWORDS = [
     # Política & geopolítica
-    "geopolítica", "geopolitics", "guerra", "war", "conflicto", "conflict",
-    "democracia", "democracy", "autoritarismo", "authoritarianism",
+    "autoritarismo", "authoritarianism",
     "ultraderecha", "far-right", "extrema derecha", "extrema derecha", "populismo", "populism",
-    "Marco Rubio", "JD Vance", "Vivek Ramaswamy", "Donald Trump",
+    "Marco Rubio", "JD Vance", "Vivek Ramaswamy", 
     "elecciones", "elections", "parlamento", "congress", "senate",
-    "diplomacia", "diplomacy", "OTAN", "NATO", "Unión Europea", "European Union",
+    "diplomacia", "diplomacy", "OTAN", "NATO", "MAGA", "neo nazi", "inteligencia", "filtración", "leak", 
 
     # Economía & sociedad
     "economía", "economy", "inflación", "inflation", "recesión", "recession",
@@ -40,7 +39,7 @@ KEYWORDS = [
 
     # América Latina
     "Argentina", "Brasil", "México", "Venezuela", "Colombia", "Chile",
-    "América Latina", "Latin America", "Latinoamérica",
+    "América Latina", "Latin America", "Latinoamérica", "El Salvador",
 ]
 
 # ── Fuentes RSS ───────────────────────────────────────────────────────────────
