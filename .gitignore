@@ -1,0 +1,7 @@
+```
+.env
+newsbot.db
+newsbot.log
+venv/
+__pycache__/
+.venv/
