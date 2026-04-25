@@ -1,173 +1,174 @@
-# 📰 NewsBot — Bot de Telegram para alertas de noticias y análisis
+# 📰 neo_cronista — Bot de Telegram para alertas de noticias con IA
 
-Bot que monitorea feeds RSS de medios internacionales (ES/EN), filtra por palabras clave, genera resúmenes con IA y los envía a suscriptores de Telegram. Desplegado en Railway, corre 24/7 sin depender de ninguna computadora local.
+Bot que monitorea feeds RSS de medios internacionales (ES/EN), filtra artículos por palabras clave, genera resúmenes con Google Gemini y los envía a suscriptores de Telegram. Corre localmente desde WSL en Windows.
 
 ---
 
 ## 🗂 Estructura del proyecto
 
 ```
-newsbot/
-├── bot.py           ← Punto de entrada principal
-├── config.py        ← Fuentes, keywords, configuración
-├── database.py      ← SQLite (suscriptores + artículos vistos)
+micronista_bot/
+├── bot.py           ← Punto de entrada principal y comandos de Telegram
+├── config.py        ← Fuentes RSS, keywords y configuración del scheduler
+├── database.py      ← SQLite: suscriptores, artículos vistos, preferencias
 ├── scraper.py       ← Lectura de feeds RSS + extracción de artículos
-├── summarizer.py    ← Resúmenes con Google Gemini API (gratuito)
+├── summarizer.py    ← Resúmenes con Google Gemini API
+├── start.sh         ← Script para arrancar el bot desde WSL
 ├── requirements.txt
-├── .env.example     ← Plantilla de variables de entorno
-├── Procfile         ← Comando de inicio para Railway
-├── .python-version  ← Fija Python 3.11 para compatibilidad
-└── newsbot.db       ← Se crea automáticamente al iniciar
+└── .python-version  ← Fija Python 3.11
 ```
+
+> La base de datos `newsbot.db` y el log `newsbot.log` se crean automáticamente al iniciar y están ignorados por git.
 
 ---
 
-## ⚙️ Instalación local
+## ⚙️ Instalación
 
-### 1. Requisitos previos
+### Requisitos previos
 
-- Python 3.11+
-- Una cuenta en [Telegram](https://telegram.org/)
-- Una API key gratuita de [Google AI Studio](https://aistudio.google.com/app/apikey)
+- Windows con WSL (Ubuntu)
+- Python 3.11
+- [uv](https://astral.sh/uv) como gestor de paquetes
+- Token de Telegram (via [@BotFather](https://t.me/BotFather))
+- API key de [Google AI Studio](https://aistudio.google.com/app/apikey) (Gemini, gratuito)
 
-### 2. Clonar y preparar entorno
-
-```bash
-git clone https://github.com/tu-usuario/newsbot.git
-cd newsbot
-
-python3.11 -m venv venv
-source venv/bin/activate      # En Windows: venv\Scripts\activate
-
-pip install -r requirements.txt
-```
-
-### 3. Crear el bot de Telegram
-
-1. Abrí Telegram y hablá con **@BotFather**
-2. Enviá `/newbot` y seguí las instrucciones
-3. Copiá el **token** que te da BotFather
-
-### 4. Configurar variables de entorno
+### 1. Clonar el repositorio en WSL
 
 ```bash
-cp .env.example .env
+git clone git@github.com:Nikolaiev1745/micronista_bot.git ~/micronista_bot
+cd ~/micronista_bot
 ```
 
-Editá `.env` y completá:
+### 2. Crear entorno virtual e instalar dependencias
+
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+```
+
+### 3. Configurar variables de entorno
+
+```bash
+nano .env
+```
+
 ```
 TELEGRAM_TOKEN=tu_token_aqui
-GEMINI_API_KEY=tu_api_key_aqui
-ADMIN_CHAT_ID=tu_chat_id_aqui   # opcional
+GEMINI_API_KEY=tu_key_aqui
+ADMIN_CHAT_ID=tu_chat_id_aqui
 ```
 
 > **¿Cómo obtengo mi chat_id?** Hablá con [@userinfobot](https://t.me/userinfobot) en Telegram.
 
-### 5. Personalizar fuentes y keywords (opcional)
-
-Editá `config.py` para agregar o quitar:
-- **Fuentes RSS** en el diccionario `RSS_SOURCES`
-- **Palabras clave** en la lista `KEYWORDS`
-- **Frecuencia de chequeo** con `CHECK_INTERVAL_MINUTES`
-
-### 6. Ejecutar el bot
+### 4. Dar permisos al script de inicio
 
 ```bash
-python bot.py
+chmod +x start.sh
 ```
-
-El bot arranca, carga el scheduler y queda esperando. Los suscriptores recibirán artículos automáticamente.
 
 ---
 
-## 💬 Comandos del bot
+## 🚀 Uso
 
-| Comando     | Descripción                              |
-|-------------|------------------------------------------|
-| `/start`    | Suscribirse a las alertas                |
-| `/stop`     | Cancelar la suscripción                  |
-| `/fuentes`  | Ver los medios monitoreados              |
-| `/temas`    | Ver las palabras clave activas           |
-| `/ahora`    | Forzar chequeo inmediato (solo admin)    |
-| `/estado`   | Estadísticas del bot (solo admin)        |
+**Prender el bot:**
+```bash
+~/micronista_bot/start.sh
+```
+
+**Apagar el bot:** `Ctrl+C`
+
+El bot corre mientras la terminal de WSL esté abierta.
 
 ---
 
-## 🚀 Despliegue en Railway (recomendado)
+## 💬 Comandos disponibles
 
-Railway corre el bot 24/7 de forma gratuita. El proyecto ya incluye el `Procfile` y `.python-version` necesarios.
-
-### 1. Subir el código a GitHub
-
-```bash
-git init
-git add .
-git commit -m "primer commit"
-git remote add origin https://github.com/TU_USUARIO/newsbot.git
-git branch -M main
-git push -u origin main
-```
-
-### 2. Crear proyecto en Railway
-
-1. Entrá a [railway.app](https://railway.app) e iniciá sesión con GitHub
-2. **New Project** → **Deploy from GitHub repo** → seleccioná el repositorio
-3. Railway detecta Python automáticamente
-
-### 3. Cargar variables de entorno
-
-En el panel de Railway → **Variables** → agregá una por una:
-
-| Variable | Valor |
+### Generales
+| Comando | Descripción |
 |---|---|
-| `TELEGRAM_TOKEN` | Token de @BotFather |
-| `GEMINI_API_KEY` | API key de Google AI Studio |
-| `ADMIN_CHAT_ID` | Tu chat_id de Telegram (opcional) |
+| `/start` | Suscribirse a las alertas |
+| `/stop` | Cancelar la suscripción |
+| `/ayuda` | Ver todos los comandos |
 
-### 4. Volumen persistente (recomendado)
+### Palabras clave
+| Comando | Descripción |
+|---|---|
+| `/mistemas` | Ver tus palabras clave activas |
+| `/agregartema <palabra>` | Agregar una palabra clave propia |
+| `/eliminartema <palabra>` | Eliminar una palabra clave |
+| `/reseteartemas` | Volver a las palabras clave globales |
 
-Sin un volumen, la base de datos se reinicia en cada redeploy y se pierden los suscriptores.
+### Fuentes
+| Comando | Descripción |
+|---|---|
+| `/misfuentes` | Ver y gestionar tus fuentes activas |
+| `/activarfuente <número>` | Activar una fuente |
+| `/desactivarfuente <número>` | Desactivar una fuente |
+| `/resetearfuentes` | Volver a usar todas las fuentes |
 
-1. En Railway → **Add Service** → **Volume**
-2. Montalo en `/app/data`
-3. Agregá la variable: `DB_PATH=/app/data/newsbot.db`
+### Frecuencia
+| Comando | Descripción |
+|---|---|
+| `/mifrecuencia` | Ver tu frecuencia de chequeo actual |
+| `/cambiafrecuencia <minutos>` | Cambiar la frecuencia (mín. 15, máx. 1440) |
 
-### 5. Verificar que está corriendo
+### Configuración
+| Comando | Descripción |
+|---|---|
+| `/miconfig` | Resumen de toda tu configuración |
 
-En **Deployments** → deploy activo → **Logs**, deberías ver:
-
-```
-✅ Scheduler iniciado. Chequeo cada 60 minutos.
-🤖 Bot iniciado. Esperando mensajes...
-```
-
-Cada redeploy se dispara automáticamente al hacer `git push`.
+### Admin
+| Comando | Descripción |
+|---|---|
+| `/ahora` | Forzar chequeo inmediato de feeds |
+| `/estado` | Estadísticas del bot |
 
 ---
 
-## 🔧 Agregar una nueva fuente RSS
+## 🔧 Personalización
 
-En `config.py`, agregá una línea al diccionario `RSS_SOURCES`:
+Editá `config.py` para modificar:
+
+- **`KEYWORDS`** — palabras clave globales para filtrar artículos
+- **`RSS_SOURCES`** — diccionario de fuentes RSS monitoreadas
+- **`CHECK_INTERVAL_MINUTES`** — frecuencia global de chequeo (default: 60 min)
+- **`MAX_ARTICLES_PER_RUN`** — límite de artículos enviados por ciclo
+
+### Agregar una fuente RSS
 
 ```python
+# En config.py, dentro de RSS_SOURCES:
 "Nombre del medio": "https://ejemplo.com/feed/rss",
 ```
 
-> **¿Cómo encontrar el RSS de un sitio?**
-> - Probá `https://sitio.com/feed`, `https://sitio.com/rss`, `https://sitio.com/feed.xml`
-> - Buscá el ícono 📡 en el sitio web
-> - Usá la extensión [RSS Feed Reader](https://chromewebstore.google.com/detail/rss-feed-reader/pnjaodmkngahhkoihejjehlcdlnohgmp) en Chrome
+---
+
+## 🔄 Workflow de desarrollo
+
+```bash
+# Hacer cambios en el código
+nano config.py
+
+# Probar localmente
+~/micronista_bot/start.sh
+
+# Subir cambios a GitHub
+git add .
+git commit -m "descripción del cambio"
+git push
+```
 
 ---
 
 ## 📦 Dependencias principales
 
 | Librería | Uso |
-|----------|-----|
+|---|---|
 | `python-telegram-bot` | Bot de Telegram (async) |
 | `apscheduler` | Scheduler periódico |
 | `beautifulsoup4` + `lxml` | Extracción de texto de artículos web |
-| `google-generativeai` | Resúmenes con Gemini 1.5 Flash (gratuito) |
+| `google-generativeai` | Resúmenes con Gemini 1.5 Flash |
 | `python-dotenv` | Variables de entorno desde `.env` |
 | `requests` | Descarga de feeds y artículos |
 
@@ -175,12 +176,11 @@ En `config.py`, agregá una línea al diccionario `RSS_SOURCES`:
 
 ## 🆓 Límites gratuitos de Google Gemini
 
-El bot usa **Gemini 1.5 Flash**, que en el tier gratuito ofrece:
+El bot usa **Gemini 1.5 Flash**, con tier gratuito:
 - 15 requests por minuto
 - 1.500 requests por día
-- 1 millón de tokens de contexto por request
 
-Más que suficiente para un bot de noticias con cientos de suscriptores.
+Más que suficiente para un bot personal o con pocos suscriptores.
 
 ---
 
